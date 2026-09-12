@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
+import { BciDashboard } from '@/components/dashboard/bci-dashboard'
 import { BciInputForm } from '@/components/bci-input-form'
 import { LoadingState } from '@/components/loading-state'
-import { PrototypePlan } from '@/components/prototype-plan'
 import { designBci } from '@/lib/api/design'
 import type { DesignRequest, DesignResponse } from '@/types/neuropilot'
 
@@ -41,7 +41,11 @@ export default function HomePage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 sm:px-6">
+    <div
+      className={`mx-auto flex min-h-dvh w-full flex-col px-4 sm:px-6 ${
+        phase === 'result' ? 'max-w-7xl' : 'max-w-4xl'
+      }`}
+    >
       <header className="flex items-center justify-between gap-4 py-7">
         <div className="flex items-center gap-3">
           <span aria-hidden="true" className="h-2.5 w-2.5 rounded-[4px] bg-cyan-400" />
@@ -84,7 +88,7 @@ export default function HomePage() {
 
       {phase === 'result' && response ? (
         <main className="flex-1 pb-16 pt-4">
-          <PrototypePlan response={response} />
+          <BciDashboard response={response} />
           <div className="mt-10">
             <button
               type="button"
