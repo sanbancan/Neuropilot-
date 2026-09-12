@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { BciInputForm } from '@/components/bci-input-form'
 import { LoadingState } from '@/components/loading-state'
 import { PrototypePlan } from '@/components/prototype-plan'
-import { designBci } from '@/lib/mock/design'
+import { designBci } from '@/lib/api/design'
 import type { DesignRequest, DesignResponse } from '@/types/neuropilot'
 
 type Phase = 'idle' | 'loading' | 'result' | 'error'

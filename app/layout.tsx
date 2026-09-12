@@ -18,7 +18,11 @@ export const metadata: Metadata = {
     "Describe a BCI idea and get a structured, engineering-style prototype plan with visible graph reasoning.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html
       lang="en"
