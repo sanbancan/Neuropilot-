@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "tsx scripts/seed-neo4j.ts"
+    "db:seed": "tsx --tsconfig tsconfig.json scripts/seed-neo4j.ts"
   },
   "dependencies": {
     "neo4j-driver": "^6.2.0",
