@@ -25,6 +25,9 @@
 *.pem
 .npm-cache/
 
+# macOS AppleDouble resource-fork files (created on exFAT/FAT32 drives)
+._*
+
 # debug
 npm-debug.log*
 yarn-debug.log*
