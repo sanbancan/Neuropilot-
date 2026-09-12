@@ -34,9 +34,12 @@ const PARADIGM_PHRASES: Record<ParadigmKey, PhraseEntry> = {
       'imagined movement',
       'imagined hand movement',
       'imagine moving',
+      'imagined left hand',
+      'imagined right hand',
+      'left hand movement',
+      'right hand movement',
       'left hand vs right hand',
       'left hand right hand',
-      'left-hand right-hand',
       'left vs right',
       'movement imagination',
       'imagine clenching',
@@ -57,6 +60,7 @@ const PARADIGM_PHRASES: Record<ParadigmKey, PhraseEntry> = {
       'ssvep',
       'steady-state visual',
       'flashing target',
+      'flickering target',
       'visual flicker',
       'flickering stimulus',
       'flickering stimuli',
@@ -107,7 +111,12 @@ const CONFIDENCE_THRESHOLD = 0.15
  * signalling that the request is unsupported.
  */
 export function detectParadigm(goal: string): ParadigmDetection {
-  const lower = goal.toLowerCase()
+  // Hyphens and underscores are normalised to spaces so "visual-selection"
+  // and "left-hand" match their space-form phrases.
+  const lower = goal
+    .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
 
   let bestKey: ParadigmKey | null = null
   let bestScore = 0
@@ -134,9 +143,10 @@ export function detectParadigm(goal: string): ParadigmDetection {
     }
   }
 
-  // Normalise: divide by a reasonable max (longest possible phrase match weight)
-  // Use a soft cap so scores are comparable across paradigms.
-  const maxPossible = 120 // approximate max single-paradigm score
+  // Normalise: divide by a reasonable max so scores are comparable across
+  // paradigms.  60 keeps a single strong phrase (e.g. "motor imagery") above
+  // the threshold while multi-phrase matches approach 1.
+  const maxPossible = 60
   const confidence = Math.min(bestScore / maxPossible, 1)
 
   if (bestScore === 0 || confidence < CONFIDENCE_THRESHOLD) {
