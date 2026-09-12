@@ -8,7 +8,6 @@ import { NextActionsPanel } from '@/components/dashboard/next-actions-panel'
 import { OverviewPanel } from '@/components/dashboard/overview-panel'
 import { PipelinePanel } from '@/components/dashboard/pipeline-panel'
 import { ProtocolPanel } from '@/components/dashboard/protocol-panel'
-import { ReasoningPanel } from '@/components/dashboard/reasoning-panel'
 import { SummaryMetrics } from '@/components/dashboard/summary-metrics'
 import { ValidationPanel } from '@/components/dashboard/validation-panel'
 import { buildDashboard } from '@/lib/dashboard/insights'
@@ -62,7 +61,6 @@ export function BciDashboard({ response }: { response: DesignResponse }) {
         <ConfoundsPanel confounds={plan.confounds} className="md:col-span-2" />
         <ProtocolPanel steps={plan.protocol} />
         <ValidationPanel validation={plan.validation} firstMetric={view.firstMetric} />
-        <ReasoningPanel steps={plan.reasoningPath} className="md:col-span-2 xl:col-span-3" />
         <DatasetsPanel
           datasets={plan.relevantDatasets}
           className="md:col-span-2 xl:col-span-3"
