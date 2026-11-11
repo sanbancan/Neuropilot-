@@ -13,14 +13,12 @@ export function InsightCallouts({ callouts }: { callouts: InsightCalloutData[] }
             {callout.label}
           </p>
           <p
-            className={`mt-1.5 text-sm font-semibold leading-snug text-zinc-100 ${
-              callout.multiline ? 'line-clamp-3' : 'line-clamp-2'
-            }`}
+            className="mt-1.5 text-sm font-semibold leading-snug text-zinc-100"
           >
             {callout.value}
           </p>
           {callout.sub ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">{callout.sub}</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">{callout.sub}</p>
           ) : null}
         </div>
       ))}

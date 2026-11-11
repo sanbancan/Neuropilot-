@@ -1,6 +1,8 @@
 import { z } from 'zod'
+import { PROVIDER_ERROR_CODES, providerMetadataSchema } from './provider'
 
-import { EVIDENCE_LEVELS, GRAPH_SOURCES, PARADIGM_KEYS } from '@/lib/graph/types'
+import { EVIDENCE_LEVELS, GRAPH_SOURCES } from '@/lib/graph/types'
+import { technicalRequirementsSchema, recognizedParadigms, coverageSchema, retrievalSchema, scientificSourceSchema, objectiveInterpretationSchema } from './knowledge'
 
 /**
  * Zod contracts for the NeuroPilot design API.
@@ -33,6 +35,7 @@ export const designRequestSchema = z.object({
   hardware: z.string().trim().max(300).optional(),
   /** Free-text constraints such as channel count or experience level. */
   constraints: z.string().trim().max(300).optional(),
+  requirements: technicalRequirementsSchema.partial().optional(),
 })
 
 export type DesignRequest = z.infer<typeof designRequestSchema>
@@ -62,18 +65,21 @@ export const planConfoundSchema = z.object({
   name: z.string().min(1),
   detail: z.string().min(1),
   /** Concrete way to reduce or monitor this confound, when one exists. */
-  mitigation: z.string().optional(),
+  mitigation: z.string().min(1).nullable().optional(),
 })
 
 export type PlanConfound = z.infer<typeof planConfoundSchema>
 
 /** One labeled hop in the graph-derived reasoning path. */
 export const reasoningStepSchema = z.object({
+  relationshipId: z.string().min(1),
+  sourceIds: z.array(z.string().min(1)),
+  verification: z.enum(['reviewed', 'unverified']),
   from: z.string().min(1),
   relationship: z.string().min(1),
   to: z.string().min(1),
-  evidence: z.enum(EVIDENCE_LEVELS).optional(),
-  note: z.string().optional(),
+  evidence: z.enum(EVIDENCE_LEVELS).nullable().optional(),
+  note: z.string().min(1).nullable().optional(),
 })
 
 export type ReasoningPathStep = z.infer<typeof reasoningStepSchema>
@@ -93,7 +99,20 @@ export type RelevantDataset = z.infer<typeof relevantDatasetSchema>
 // Plan
 // ---------------------------------------------------------------------------
 
+export const PLAN_STATUSES = ['complete', 'partial', 'clarification_required', 'unsupported', 'insufficient_evidence'] as const
+export const planClaimSchema = z.object({
+  section: z.enum(['paradigm', 'modality', 'neuralTarget', 'electrodes', 'hardware', 'sampling', 'pipeline', 'features', 'classifier', 'protocol', 'validation', 'deployment']),
+  statement: z.string().min(1),
+  kind: z.enum(['scientific_evidence', 'engineering_recommendation', 'provisional_engineering_recommendation', 'assumption', 'experimental_observation']),
+  sourceIds: z.array(z.string().min(1)),
+  relationshipIds: z.array(z.string().min(1)),
+})
+
 export const prototypePlanSchema = z.object({
+  status: z.enum(PLAN_STATUSES),
+  questions: z.array(z.string().min(1)),
+  gaps: z.array(z.string().min(1)),
+  claims: z.array(planClaimSchema),
   title: z.string().min(1),
   summary: z.string().min(1),
 
@@ -104,52 +123,66 @@ export const prototypePlanSchema = z.object({
   modality: z.string().min(1),
 
   neuralTarget: z.object({
-    signals: z.array(z.string().min(1)).min(1),
-    brainRegions: z.array(z.string().min(1)).min(1),
+    signals: z.array(z.string().min(1)),
+    brainRegions: z.array(z.string().min(1)),
     reason: z.string().min(1),
   }),
 
   electrodes: z.object({
-    recommended: z.array(z.string().min(1)).min(1),
+    recommended: z.array(z.string().min(1)),
     reason: z.string().min(1),
   }),
 
   hardware: z.object({
+    deviceKey: z.string().min(1).nullable(),
     /** May be empty when the user already has suitable hardware. */
     requirements: z.array(z.string().min(1)),
     reason: z.string().min(1),
   }),
 
   sampling: z.object({
-    recommendation: z.string().min(1),
+    recommendation: z.string().min(1).nullable(),
+    rateHz: z.number().positive().nullable(),
     reason: z.string().min(1),
   }),
 
   /** Experimental protocol as ordered steps. */
-  protocol: z.array(planStepSchema).min(1),
+  protocol: z.array(planStepSchema),
 
   /** Signal-processing pipeline as ordered steps. */
-  pipeline: z.array(planStepSchema).min(1),
+  pipeline: z.array(planStepSchema),
 
   /** Features to extract from the processed signal. */
-  features: z.array(z.string().min(1)).min(1),
+  features: z.array(z.string().min(1)),
 
-  classifier: namedReasonSchema,
+  classifier: namedReasonSchema.nullable(),
+
+  /** Explicit backend recommendations; the frontend must not invent actions. */
+  nextActions: z.array(z.object({
+    action: z.string().min(1),
+    rationale: z.string().min(1),
+  })).min(1),
 
   /** How to check the prototype does more than chance. */
-  validation: z.array(z.string().min(1)).min(1),
+  validation: z.array(z.string().min(1)),
 
   /** Artifacts and confounds to control for. */
-  confounds: z.array(planConfoundSchema).min(1),
+  confounds: z.array(planConfoundSchema),
 
   assumptions: z.array(z.string().min(1)).min(1),
   limitations: z.array(z.string().min(1)).min(1),
 
   /** Graph hops shown in the "Why did NeuroPilot recommend this?" panel. */
-  reasoningPath: z.array(reasoningStepSchema).min(1),
+  reasoningPath: z.array(reasoningStepSchema),
 
   /** Only populated when a catalog dataset is genuinely relevant. */
   relevantDatasets: z.array(relevantDatasetSchema),
+  deployment: z.object({
+    target: z.string().min(1).nullable(),
+    recommendations: z.array(z.string().min(1)),
+    tradeoffs: z.array(z.string().min(1)),
+  }),
+  alternatives: z.array(z.object({ name: z.string().min(1), tradeoff: z.string().min(1), sourceIds: z.array(z.string()) })),
 })
 
 export type PrototypePlan = z.infer<typeof prototypePlanSchema>
@@ -163,9 +196,23 @@ export const PLAN_GENERATORS = ['llm', 'fallback'] as const
 
 export type PlanGenerator = (typeof PLAN_GENERATORS)[number]
 
+export const GENERATION_FAILURE_CODES = [
+  'not_configured', 'api_error', 'timeout', 'refused', 'truncated',
+  'empty_response', 'invalid_json', 'invalid_schema', 'unexpected_response', 'scientific_validation', 'insufficient_knowledge',
+  ...PROVIDER_ERROR_CODES,
+] as const
+export type GenerationFailureCode = (typeof GENERATION_FAILURE_CODES)[number]
+
+/** Sanitized failure metadata. Never contains provider errors or prompt contents. */
+export const generationFailureSchema = z.object({
+  code: z.enum(GENERATION_FAILURE_CODES),
+  message: z.string().min(1),
+})
+export type GenerationFailure = z.infer<typeof generationFailureSchema>
+
 export const designPlanMetaSchema = z.object({
   /** Paradigm the agent matched the goal to. */
-  paradigmKey: z.enum(PARADIGM_KEYS),
+  paradigmKey: z.enum(recognizedParadigms),
   /** Backend that supplied the graph context. */
   graphSource: z.enum(GRAPH_SOURCES),
   /** What generated the plan text. */
@@ -174,6 +221,21 @@ export const designPlanMetaSchema = z.object({
   model: z.string().nullable(),
   /** ISO 8601 timestamp. */
   generatedAt: z.string(),
+  attempts: z.number().int().min(0).max(2),
+  fallbackReason: generationFailureSchema.nullable(),
+  interpretation: objectiveInterpretationSchema,
+  interpretationAttempts: z.number().int().min(0).max(1),
+  interpretationMethod: z.enum(['model', 'offline-hints']),
+  interpretationFailure: generationFailureSchema.nullable(),
+  coverage: coverageSchema,
+  retrieval: retrievalSchema,
+  sources: z.array(scientificSourceSchema),
+  provider: providerMetadataSchema.optional(),
+  diagnostics: z.object({
+    synthesis: z.enum(['succeeded', 'failed', 'skipped']),
+    gate: z.enum(['eligible', 'unknown_objective', 'missing_knowledge', 'incompatible_modality', 'conflicting_requirements', 'provider_unavailable']),
+    validationCategories: z.array(z.enum(['schema', 'provenance', 'technical_consistency', 'plan_state'])),
+  }).optional(),
 })
 
 export type DesignPlanMeta = z.infer<typeof designPlanMetaSchema>
@@ -193,6 +255,8 @@ export const DESIGN_ERROR_CODES = [
   'INVALID_INPUT',
   'UNSUPPORTED_OBJECTIVE',
   'GENERATION_FAILED',
+  'MODEL_REFUSED',
+  'AI_PROVIDER_ERROR',
 ] as const
 
 export type DesignErrorCode = (typeof DESIGN_ERROR_CODES)[number]
@@ -203,6 +267,7 @@ export const designErrorResponseSchema = z.object({
     message: z.string().min(1),
     /** Extra context, e.g. the supported paradigm names. */
     details: z.array(z.string()).optional(),
+    providerCode: z.enum(PROVIDER_ERROR_CODES).optional(),
   }),
 })
 

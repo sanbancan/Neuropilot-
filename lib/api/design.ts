@@ -9,8 +9,8 @@ import {
  * Client for POST /api/design — the NeuroPilot BCI Systems Architect.
  *
  * Returns a Zod-validated `DesignResponse`, or throws an `Error` whose
- * message carries the API's human-readable failure explanation (including
- * the supported-paradigm list for unsupported objectives).
+ * message carries the API's human-readable failure explanation. Partial,
+ * clarification, and evidence-gap states are successful typed responses.
  */
 
 export async function designBci(request: DesignRequest): Promise<DesignResponse> {

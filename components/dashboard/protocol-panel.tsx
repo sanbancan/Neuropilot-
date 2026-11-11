@@ -19,7 +19,7 @@ export function ProtocolPanel({
             </span>
             <div className="min-w-0">
               <p className="text-xs font-semibold leading-snug text-zinc-100">{step.title}</p>
-              <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-zinc-500">
+              <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
                 {step.detail}
               </p>
             </div>

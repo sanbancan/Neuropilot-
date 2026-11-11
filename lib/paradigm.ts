@@ -1,161 +1,39 @@
-/**
- * Deterministic paradigm classifier for NeuroPilot.
- *
- * Uses keyword scoring to map a free-text BCI goal to one of the supported
- * paradigms without requiring an LLM call.  The classifier is intentionally
- * simple and fast — obvious requests are handled here so the LLM is only
- * invoked for plan synthesis, not classification.
- */
+/** Offline hints only. Model interpretation is not gated on these expressions. */
+import type { ObjectiveInterpretation } from '@/lib/schemas/knowledge'
 
-import type { ParadigmKey } from '@/lib/graph/types'
-
-export interface ParadigmDetection {
-  /** Matched paradigm, or `null` when no supported paradigm scored above threshold. */
-  paradigm: ParadigmKey | null
-  /** Normalised confidence in [0, 1]. */
-  confidence: number
-  /** Short human-readable interpretation of what the detector understood. */
-  interpretation?: string
-}
-
-// ---------------------------------------------------------------------------
-// Keyword / phrase dictionaries
-// ---------------------------------------------------------------------------
-
-interface PhraseEntry {
-  phrases: string[]
-  weight: number
-}
-
-const PARADIGM_PHRASES: Record<ParadigmKey, PhraseEntry> = {
-  'motor-imagery': {
-    phrases: [
-      'motor imagery',
-      'imagined movement',
-      'imagined hand movement',
-      'imagine moving',
-      'imagined left hand',
-      'imagined right hand',
-      'left hand movement',
-      'right hand movement',
-      'left hand vs right hand',
-      'left hand right hand',
-      'left vs right',
-      'movement imagination',
-      'imagine clenching',
-      'imagine grasping',
-      'hand movement',
-      'motor imagination',
-      'sensorimotor',
-      'kinesthetic imagery',
-      'mu rhythm',
-      'event-related desynchronisation',
-      'event-related desynchronization',
-      'ERD',
-    ],
-    weight: 1.0,
-  },
-  'ssvep': {
-    phrases: [
-      'ssvep',
-      'steady-state visual',
-      'flashing target',
-      'flickering target',
-      'visual flicker',
-      'flickering stimulus',
-      'flickering stimuli',
-      'visual selection',
-      'stimulus frequency',
-      'visual evoked potential',
-      'flicker frequency',
-      'gaze selection',
-      'p300 speller',
-      'visual speller',
-      'flashing visual',
-    ],
-    weight: 1.0,
-  },
-  'meditation-alpha': {
-    phrases: [
-      'meditation',
-      'meditative state',
-      'meditative',
-      'relaxation eeg',
-      'alpha meditation',
-      'alpha relaxation',
-      'mindfulness',
-      'focused attention',
-      'open monitoring',
-      'resting state',
-      'eyes closed rest',
-      'alpha power',
-      'meditation changes eeg',
-      'calm state',
-      'relaxation',
-    ],
-    weight: 1.0,
-  },
-}
-
-/** Minimum normalised score to accept a classification. */
-const CONFIDENCE_THRESHOLD = 0.15
-
-// ---------------------------------------------------------------------------
-// Detector
-// ---------------------------------------------------------------------------
-
-/**
- * Detect the closest supported paradigm from a user's BCI goal text.
- *
- * Returns `{ paradigm: null }` when no paradigm scores above the threshold,
- * signalling that the request is unsupported.
- */
-export function detectParadigm(goal: string): ParadigmDetection {
-  // Hyphens and underscores are normalised to spaces so "visual-selection"
-  // and "left-hand" match their space-form phrases.
-  const lower = goal
-    .toLowerCase()
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-
-  let bestKey: ParadigmKey | null = null
-  let bestScore = 0
-  let bestInterpretation: string | undefined
-
-  for (const [key, entry] of Object.entries(PARADIGM_PHRASES) as [ParadigmKey, PhraseEntry][]) {
-    let score = 0
-    const matched: string[] = []
-
-    for (const phrase of entry.phrases) {
-      if (lower.includes(phrase)) {
-        // Longer phrases are more specific — give them more weight.
-        score += phrase.length * entry.weight
-        matched.push(phrase)
-      }
-    }
-
-    if (score > bestScore) {
-      bestScore = score
-      bestKey = key
-      bestInterpretation = matched.length > 0
-        ? `Matched: ${matched.join(', ')}`
-        : undefined
-    }
+export function explicitParadigmNames(goal: string): ('p300' | 'ssvep')[] {
+  const names: ('p300' | 'ssvep')[] = []
+  for (const match of goal.matchAll(/\bp300\b|\bssvep\b/gi)) {
+    const before = goal.slice(0, match.index).slice(-40)
+    if (/(?:not|without|avoid|instead of|rather than)\s+(?:using\s+)?$/i.test(before)) continue
+    const name = match[0].toLowerCase() as 'p300' | 'ssvep'
+    if (!names.includes(name)) names.push(name)
   }
+  return names
+}
 
-  // Normalise: divide by a reasonable max so scores are comparable across
-  // paradigms.  60 keeps a single strong phrase (e.g. "motor imagery") above
-  // the threshold while multi-phrase matches approach 1.
-  const maxPossible = 60
-  const confidence = Math.min(bestScore / maxPossible, 1)
-
-  if (bestScore === 0 || confidence < CONFIDENCE_THRESHOLD) {
-    return { paradigm: null, confidence: 0 }
-  }
-
+export function objectiveHints(goal: string): ObjectiveInterpretation {
+  const text = goal.toLowerCase().replace(/[-_]/g, ' ').replace(/\b(?:no|not|without|avoid|instead of|rather than)\s+(?:using\s+)?(?:p300|ssvep|flicker(?:ing)?)/g, '')
+  const candidates: ObjectiveInterpretation['candidates'] = []
+  if (/motor imagery|imagin\w* (?:\w+\s){0,5}(?:mov|hand|fist)|kinesthetic|left hand.*right hand/.test(text)) candidates.push('motor-imagery')
+  if (/\bp300\b|\bp3 speller\b|oddball|rare target|infrequent.*target|event related potential/.test(text)) candidates.push('p300')
+  if (/\bssvep\b|steady state visual|flicker|different frequencies|frequency tagged/.test(text)) candidates.push('ssvep')
+  if (/meditat|mindful|alpha (?:power|activity|rhythm)|relaxation/.test(text)) candidates.push('meditation-alpha')
+  const paradigm = candidates.length === 1 ? candidates[0] : 'unknown'
   return {
-    paradigm: bestKey,
-    confidence,
-    interpretation: bestInterpretation,
+    summary: goal,
+    paradigm,
+    candidates,
+    modality: /fnirs|near infrared/.test(text) ? 'fNIRS' : /\beeg\b/.test(text) ? 'EEG' : 'unknown',
+    questions: candidates.length > 1
+      ? ['Which paradigm should this design use? Your objective mentions multiple approaches.']
+      : candidates.length === 0 ? ['What task should the BCI perform, and which neural response or interaction would you like to investigate?'] : [],
   }
+}
+
+/** Compatibility helper for callers needing a hint, never a request rejection. */
+export function detectParadigm(goal: string) {
+  const hint = objectiveHints(goal)
+  return { paradigm: hint.paradigm === 'unknown' || hint.paradigm === 'other' ? null : hint.paradigm,
+    confidence: hint.candidates.length === 1 ? 0.5 : 0, interpretation: hint.summary }
 }

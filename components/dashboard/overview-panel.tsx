@@ -1,17 +1,14 @@
 import type { ReactNode } from 'react'
 
 import { Chip, Panel } from '@/components/dashboard/panel'
-import type { DashboardViewModel } from '@/lib/dashboard/insights'
 import type { PrototypePlan } from '@/types/neuropilot'
 
 /** Compact definition list of what the prototype is, at a glance. */
 export function OverviewPanel({
   plan,
-  view,
   className = '',
 }: {
   plan: PrototypePlan
-  view: DashboardViewModel
   className?: string
 }) {
   return (
@@ -30,12 +27,11 @@ export function OverviewPanel({
             </div>
           }
         />
-        <Row label="Classifier" value={plan.classifier.name} />
-        <Row label="Minimum setup" value={view.minimumSetup} />
-        <Row label="Likely bottleneck" value={view.bottleneck} />
+        <Row label="Classifier" value={plan.classifier?.name ?? 'Deferred'} />
+        <Row label="Sampling" value={plan.sampling.recommendation ?? 'Deferred'} />
       </dl>
-      <p className="mt-3 line-clamp-2 border-t border-zinc-800/80 pt-3 text-xs leading-relaxed text-zinc-500">
-        {view.summaryLead}
+      <p className="mt-3 border-t border-zinc-800/80 pt-3 text-xs leading-relaxed text-zinc-500">
+        {plan.paradigm.reason}
       </p>
     </Panel>
   )

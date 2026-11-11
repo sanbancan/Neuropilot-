@@ -19,6 +19,8 @@ export type {
   PlanGenerator,
   DesignPlanMeta,
   DesignResponse,
+  GenerationFailure,
+  GenerationFailureCode,
   DesignErrorCode,
   DesignErrorResponse,
 } from '@/lib/schemas/design'
@@ -26,6 +28,7 @@ export type {
 export type {
   GraphSource,
   ParadigmKey,
+  RecognizedParadigm,
   ParadigmDescriptor,
   EvidenceLevel,
   GraphNodeLabel,
@@ -59,3 +62,7 @@ export {
   GRAPH_SOURCES,
 } from '@/lib/graph/types'
 export { MODALITY_INPUTS, PLAN_GENERATORS, DESIGN_ERROR_CODES } from '@/lib/schemas/design'
+
+export type { ObjectiveInterpretation, TechnicalRequirements, ScientificSource, KnowledgeCoverage, RetrievalStatus } from '@/lib/schemas/knowledge'
+
+export type { ProviderMetadata, ModelCapabilities, OutputMode } from '@/lib/schemas/provider'

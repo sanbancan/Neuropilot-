@@ -10,7 +10,7 @@ export function NextActionsPanel({
   className?: string
 }) {
   return (
-    <Panel eyebrow="Act on it" title="Next Best Actions" className={className}>
+    <Panel eyebrow="Act on it" title="Proposed Next Actions" className={className}>
       <ol className="space-y-3">
         {actions.map((action, index) => (
           <li
@@ -26,7 +26,7 @@ export function NextActionsPanel({
               </span>
             </div>
             <p className="mt-1 text-sm font-semibold leading-snug text-zinc-100">{action.action}</p>
-            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-zinc-500">
+            <p className="mt-1 text-[11px] leading-snug text-zinc-500">
               {action.rationale}
             </p>
           </li>

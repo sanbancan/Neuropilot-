@@ -30,7 +30,7 @@ export function DatasetsPanel({
                 </span>
               ) : null}
             </div>
-            <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-zinc-500">
+            <p className="mt-1.5 text-[11px] leading-snug text-zinc-500">
               {dataset.why}
             </p>
             <a

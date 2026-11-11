@@ -1,3 +1,5 @@
+import type { KnowledgeCoverage, ScientificSource, TechnicalRequirements, RetrievalStatus, ObjectiveInterpretation } from '@/lib/schemas/knowledge'
+
 /**
  * Shared contracts for the NeuroPilot knowledge-graph layer.
  *
@@ -13,9 +15,10 @@ export type GraphSource = 'neo4j' | 'in-memory'
 export const GRAPH_SOURCES = ['neo4j', 'in-memory'] as const
 
 /** Paradigms the current knowledge graph supports. */
-export const PARADIGM_KEYS = ['motor-imagery', 'ssvep', 'meditation-alpha'] as const
+export const PARADIGM_KEYS = ['motor-imagery', 'ssvep', 'meditation-alpha', 'p300'] as const
 
 export type ParadigmKey = (typeof PARADIGM_KEYS)[number]
+export type RecognizedParadigm = ObjectiveInterpretation['paradigm']
 
 export interface ParadigmDescriptor {
   name: string
@@ -24,6 +27,7 @@ export interface ParadigmDescriptor {
 
 /** User-facing name and description for each supported paradigm. */
 export const PARADIGM_INFO: Record<ParadigmKey, ParadigmDescriptor> = {
+  p300: { name: 'P300 / Event-related potentials', description: 'Recognized paradigm; design coverage must be assessed separately.' },
   'motor-imagery': {
     name: 'Motor Imagery',
     description:
@@ -65,6 +69,8 @@ export type GraphNodeLabel =
   | 'Confound'
   | 'ValidationMethod'
   | 'Dataset'
+  | 'Protocol'
+  | 'Deployment'
 
 /**
  * Relationship types in the NeuroPilot graph model.
@@ -102,6 +108,7 @@ export interface GraphNodeBase {
   key: string
   name: string
   description?: string
+  sourceIds?: string[]
 }
 
 export interface ParadigmNode extends GraphNodeBase {
@@ -140,6 +147,8 @@ export interface HardwareNode extends GraphNodeBase {
   /** Nominal sampling rate in Hz when known. */
   samplingRateHz?: number
   notes?: string
+  modality?: 'EEG' | 'fNIRS'
+  aliases?: string[]
 }
 
 /** A signal-processing step, e.g. band-pass filtering or epoching. */
@@ -188,7 +197,10 @@ export interface DatasetNode extends GraphNodeBase {
   license?: string
 }
 
+export interface PlanningNode extends GraphNodeBase { label: 'Protocol' | 'Deployment'; targets?: string[] }
+
 export type GraphNode =
+  | PlanningNode
   | ParadigmNode
   | ModalityNode
   | NeuralSignalNode
@@ -210,6 +222,9 @@ export type GraphNode =
 
 /** A directed relationship between two nodes, referenced by their keys. */
 export interface GraphEdge {
+  id?: string
+  sourceIds?: string[]
+  verification?: 'reviewed' | 'unverified'
   fromKey: string
   toKey: string
   type: GraphRelationshipType
@@ -222,6 +237,9 @@ export interface GraphEdge {
  * panel. Uses display names rather than keys.
  */
 export interface ReasoningStep {
+  relationshipId?: string
+  sourceIds?: string[]
+  verification?: 'reviewed' | 'unverified'
   from: string
   relationship: GraphRelationshipType
   to: string
@@ -238,7 +256,7 @@ export interface ReasoningStep {
  * the structured knowledge the agent synthesizes into a prototype plan.
  */
 export interface ParadigmContext {
-  paradigmKey: ParadigmKey
+  paradigmKey: RecognizedParadigm
   paradigmName: string
   source: GraphSource
   /** Recording modality the paradigm is typically measured with, e.g. "EEG". */
@@ -258,6 +276,14 @@ export interface ParadigmContext {
   datasets: DatasetNode[]
   /** Labeled hops supporting the recommendations above. */
   reasoningPath: ReasoningStep[]
+  relationships: GraphEdge[]
+  sources: ScientificSource[]
+  coverage: KnowledgeCoverage
+  retrieval: RetrievalStatus
+  requirements: TechnicalRequirements
+  conflicts: string[]
+  protocols: PlanningNode[]
+  deployments: PlanningNode[]
 }
 
 /**
@@ -267,4 +293,5 @@ export interface ParadigmContext {
 export interface GraphSnapshot {
   nodes: GraphNode[]
   edges: GraphEdge[]
+  sources: ScientificSource[]
 }

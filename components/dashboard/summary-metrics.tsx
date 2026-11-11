@@ -19,13 +19,13 @@ export function SummaryMetrics({ metrics }: { metrics: MetricCard[] }) {
             {metric.label}
           </p>
           <p
-            className={`mt-1.5 truncate text-sm font-semibold ${
+            className={`mt-1.5 break-words text-sm font-semibold ${
               VALUE_TONE[metric.tone ?? 'default']
             }`}
           >
             {metric.value}
           </p>
-          {metric.sub ? <p className="truncate text-[11px] text-zinc-500">{metric.sub}</p> : null}
+          {metric.sub ? <p className="break-words text-[11px] text-zinc-500">{metric.sub}</p> : null}
         </div>
       ))}
     </div>

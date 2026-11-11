@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "tsx --tsconfig tsconfig.json scripts/seed-neo4j.ts"
+    "db:seed": "tsx --tsconfig tsconfig.json scripts/seed-neo4j.ts",
+    "test": "node --import tsx --test tests/*.test.ts tests/*.test.tsx",
+    "typecheck": "tsc --noEmit",
+    "ai:models": "tsx --tsconfig tsconfig.json scripts/list-ai-models.ts"
   },
   "dependencies": {
     "neo4j-driver": "^6.2.0",

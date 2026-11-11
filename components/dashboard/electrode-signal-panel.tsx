@@ -43,7 +43,7 @@ export function ElectrodeSignalPanel({
           </dd>
         </div>
       </dl>
-      <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-zinc-500">
+      <p className="mt-3 text-xs leading-relaxed text-zinc-500">
         {plan.electrodes.reason}
       </p>
     </Panel>

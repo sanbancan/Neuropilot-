@@ -19,15 +19,16 @@ import type {
   FeatureNode,
   FrequencyBandNode,
   GraphEdge,
+  GraphNode,
+  GraphSnapshot,
   HardwareNode,
   ModalityNode,
   NeuralSignalNode,
-  ParadigmKey,
   ParadigmNode,
   ProcessingMethodNode,
-  ReasoningStep,
   ValidationMethodNode,
 } from '@/lib/graph/types'
+import { SOURCES } from './sources'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NODES
@@ -475,7 +476,7 @@ export const datasetNodes: DatasetNode[] = [
 
 // ── Aggregated node list (used by the seed script) ────────────────────────
 
-export const ALL_NODES = [
+const LEGACY_NODES = [
   ...paradigmNodes,
   ...modalityNodes,
   ...neuralSignalNodes,
@@ -496,7 +497,7 @@ export const ALL_NODES = [
 // EDGES
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const ALL_EDGES: GraphEdge[] = [
+const LEGACY_EDGES: GraphEdge[] = [
   // ── Motor Imagery ──────────────────────────────────────────────────────
 
   // Paradigm → Modality / Signals
@@ -612,62 +613,56 @@ export const ALL_EDGES: GraphEdge[] = [
   { fromKey: 'ssvep', toKey: 'attention-variation', type: 'CONFOUNDED_BY', evidence: 'engineering-default', note: 'Fluctuating attention modulates SSVEP amplitude' },
 ]
 
-// ═══════════════════════════════════════════════════════════════════════════
-// REASONING PATHS
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Curated hops rendered in the "Why did NeuroPilot recommend this?" panel.
-// Each path follows the most informative chain through the graph for that
-// paradigm, using display names rather than internal keys.
-// ═══════════════════════════════════════════════════════════════════════════
 
-export const REASONING_PATHS: Record<ParadigmKey, ReasoningStep[]> = {
-  'motor-imagery': [
-    { from: 'Motor Imagery', relationship: 'USES_MODALITY', to: 'EEG', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'ASSOCIATED_WITH', to: 'Mu Rhythm', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'ASSOCIATED_WITH', to: 'Beta Activity', evidence: 'established' },
-    { from: 'Mu Rhythm', relationship: 'MEASURED_OVER', to: 'Sensorimotor Cortex', evidence: 'established' },
-    { from: 'Sensorimotor Cortex', relationship: 'MEASURED_AT', to: 'C3', evidence: 'established' },
-    { from: 'Sensorimotor Cortex', relationship: 'MEASURED_AT', to: 'Cz', evidence: 'established' },
-    { from: 'Sensorimotor Cortex', relationship: 'MEASURED_AT', to: 'C4', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'PROCESSED_BY', to: 'Band-pass Filtering', evidence: 'engineering-default' },
-    { from: 'Motor Imagery', relationship: 'PROCESSED_BY', to: 'Epoching', evidence: 'engineering-default' },
-    { from: 'Motor Imagery', relationship: 'PROCESSED_BY', to: 'Artifact Removal', evidence: 'engineering-default' },
-    { from: 'Motor Imagery', relationship: 'EXTRACTED_BY', to: 'Common Spatial Patterns', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'CLASSIFIED_BY', to: 'Linear Discriminant Analysis', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'VALIDATED_BY', to: 'Cross-Validation', evidence: 'engineering-default' },
-    { from: 'Motor Imagery', relationship: 'CONFOUNDED_BY', to: 'Actual Hand Movement', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'CONTAMINATED_BY', to: 'EMG Artifact', evidence: 'established' },
-    { from: 'Motor Imagery', relationship: 'CONTAMINATED_BY', to: 'Eye Artifacts', evidence: 'established' },
-  ],
+/** Legacy records remain available but explicitly unverified; no retroactive citations. */
 
-  ssvep: [
-    { from: 'SSVEP', relationship: 'USES_MODALITY', to: 'EEG', evidence: 'established' },
-    { from: 'SSVEP', relationship: 'ASSOCIATED_WITH', to: 'SSVEP Response', evidence: 'established' },
-    { from: 'SSVEP Response', relationship: 'MEASURED_OVER', to: 'Occipital Cortex', evidence: 'established' },
-    { from: 'Occipital Cortex', relationship: 'MEASURED_AT', to: 'O1', evidence: 'established' },
-    { from: 'Occipital Cortex', relationship: 'MEASURED_AT', to: 'Oz', evidence: 'established' },
-    { from: 'Occipital Cortex', relationship: 'MEASURED_AT', to: 'O2', evidence: 'established' },
-    { from: 'SSVEP', relationship: 'REQUIRES', to: 'Visual Stimulation', evidence: 'established', note: 'Repetitive flickering stimulus at target frequencies' },
-    { from: 'SSVEP', relationship: 'PROCESSED_BY', to: 'Spectral Analysis', evidence: 'established' },
-    { from: 'SSVEP', relationship: 'EXTRACTED_BY', to: 'Frequency-Domain Features', evidence: 'established' },
-    { from: 'SSVEP', relationship: 'CLASSIFIED_BY', to: 'Canonical Correlation Analysis', evidence: 'established' },
-    { from: 'SSVEP', relationship: 'VALIDATED_BY', to: 'Cross-Validation', evidence: 'engineering-default' },
-    { from: 'SSVEP', relationship: 'CONTAMINATED_BY', to: 'Visual Fatigue', evidence: 'engineering-default' },
-    { from: 'SSVEP', relationship: 'CONFOUNDED_BY', to: 'Attention Variation', evidence: 'engineering-default', note: 'Fluctuating attention modulates SSVEP amplitude' },
-  ],
-
-  'meditation-alpha': [
-    { from: 'Meditation / Alpha Exploration', relationship: 'INVESTIGATES', to: 'Alpha Activity', evidence: 'exploratory' },
-    { from: 'Alpha Activity', relationship: 'HAS_FREQUENCY', to: 'Alpha Band', evidence: 'established' },
-    { from: 'Alpha Activity', relationship: 'USES_MODALITY', to: 'EEG', evidence: 'established' },
-    { from: 'Posterior Alpha', relationship: 'MEASURED_OVER', to: 'Posterior Regions', evidence: 'established' },
-    { from: 'Posterior Regions', relationship: 'MEASURED_AT', to: 'O1', evidence: 'established' },
-    { from: 'Posterior Regions', relationship: 'MEASURED_AT', to: 'Oz', evidence: 'established' },
-    { from: 'Posterior Regions', relationship: 'MEASURED_AT', to: 'O2', evidence: 'established' },
-    { from: 'Alpha Activity', relationship: 'EXTRACTED_BY', to: 'Power Spectral Density', evidence: 'engineering-default' },
-    { from: 'Alpha Activity', relationship: 'EXTRACTED_BY', to: 'Band Power Extraction', evidence: 'engineering-default' },
-    { from: 'Eye Closure', relationship: 'AFFECTS', to: 'Posterior Alpha', evidence: 'established', note: 'Eye closure dramatically increases posterior alpha power' },
-    { from: 'Drowsiness', relationship: 'AFFECTS', to: 'Alpha Activity', evidence: 'established', note: 'Drowsiness increases alpha and theta power' },
-  ],
+const hardwareCatalog: HardwareNode[] = [
+  { key: 'openbci-cyton', label: 'Hardware', name: 'OpenBCI Cyton', aliases: ['cyton'], channels: 8, samplingRateHz: 250, modality: 'EEG', sourceIds: ['manufacturer:openbci-boards'], notes: 'Standard 8-channel wireless configuration.' },
+  { key: 'openbci-cyton-daisy', label: 'Hardware', name: 'OpenBCI Cyton + Daisy', aliases: ['cyton daisy', 'cyton + daisy', 'daisy'], channels: 16, samplingRateHz: 125, modality: 'EEG', sourceIds: ['manufacturer:openbci-boards'], notes: 'Standard 16-channel wireless configuration; distinct sampling rate from standalone Cyton.' },
+  { key: 'openbci-ganglion', label: 'Hardware', name: 'OpenBCI Ganglion', aliases: ['ganglion'], channels: 4, samplingRateHz: 200, modality: 'EEG', sourceIds: ['manufacturer:openbci-boards'], notes: 'Standard 4-channel BLE configuration.' },
+]
+export const ALL_NODES: GraphNode[] = [
+  ...LEGACY_NODES.map(node => ({ ...node, sourceIds: ['curated:legacy-v1'] })),
+  ...hardwareCatalog,
+  {
+    key: 'dataset-physionet-mi', label: 'Dataset', name: 'PhysioNet EEG Motor Movement/Imagery',
+    url: 'https://physionet.org/content/eegmmidb/1.0.0/', modality: 'EEG', taskParadigm: 'Motor execution and imagery',
+    synthetic: false, format: 'EDF+', population: '109 volunteers', useCases: ['Motor imagery pipeline development'],
+    limitations: ['64-channel 160 Hz recordings; transfer to different hardware and users requires validation.'],
+    sourceIds: ['dataset:physionet-eegmmidb-1.0.0'],
+  },
+]
+const reviewedMappings: Record<string, string> = {
+  'motor-imagery|USES_MODALITY|eeg': 'doi:10.1109/86.895946',
+  'motor-imagery|EXTRACTED_BY|csp': 'doi:10.1109/86.895946',
+  'ssvep|USES_MODALITY|eeg': 'doi:10.1109/TBME.2006.886577',
+  'ssvep|CLASSIFIED_BY|cca': 'doi:10.1109/TBME.2006.886577',
 }
+export function relationshipId(edge: Pick<GraphEdge, 'fromKey' | 'type' | 'toKey'>): string {
+  return `${edge.fromKey}|${edge.type}|${edge.toKey}`
+}
+export const ALL_EDGES: GraphEdge[] = [
+  ...LEGACY_EDGES.map(edge => {
+    const id = relationshipId(edge)
+    const source = reviewedMappings[id]
+    return { ...edge, id, sourceIds: [source || 'curated:legacy-v1'], verification: source ? 'reviewed' as const : 'unverified' as const }
+  }),
+  ...hardwareCatalog.map(node => ({
+    fromKey: 'eeg', type: 'COMPATIBLE_WITH' as const, toKey: node.key,
+    id: `eeg|COMPATIBLE_WITH|${node.key}`, evidence: 'engineering-default' as const,
+    verification: 'reviewed' as const, sourceIds: ['manufacturer:openbci-boards'],
+    note: 'EEG recording capability only; experimental suitability remains to be evaluated.',
+  })),
+  {
+    fromKey: 'eye-closure', type: 'AFFECTS', toKey: 'alpha-activity',
+    id: 'eye-closure|AFFECTS|alpha-activity', evidence: 'established', verification: 'reviewed',
+    sourceIds: ['doi:10.1016/j.clinph.2007.07.028'],
+    note: 'Eyes-open and eyes-closed resting recordings differ in alpha power; control eye state. This is not evidence of meditation detection.',
+  },
+  {
+    fromKey: 'dataset-physionet-mi', type: 'RELEVANT_TO', toKey: 'motor-imagery',
+    id: 'dataset-physionet-mi|RELEVANT_TO|motor-imagery', evidence: 'established', verification: 'reviewed',
+    sourceIds: ['dataset:physionet-eegmmidb-1.0.0'],
+  },
+]
+export const SEED_GRAPH: GraphSnapshot = { nodes: ALL_NODES, edges: ALL_EDGES, sources: SOURCES }

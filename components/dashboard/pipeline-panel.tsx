@@ -31,7 +31,7 @@ export function PipelinePanel({
               <p className="mt-0.5 text-xs font-semibold leading-snug text-zinc-100">
                 {step.title}
               </p>
-              <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-zinc-500">
+              <p className="mt-1 text-[11px] leading-snug text-zinc-500">
                 {step.detail}
               </p>
             </li>

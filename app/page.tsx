@@ -65,9 +65,8 @@ export default function HomePage() {
             What BCI do you want to build?
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
-            Describe your idea in plain language. NeuroPilot matches it to a supported BCI
-            paradigm, retrieves connected neuroscience and engineering knowledge, and returns a
-            structured prototype plan — including the reasoning behind every recommendation.
+            Describe your idea in plain language. NeuroPilot interprets your objective, checks available scientific knowledge, and returns
+            a complete proposal, partial plan, or clarification request — including the reasoning behind every recommendation.
           </p>
           <div className="mt-10">
             <BciInputForm initialRequest={request} onSubmit={handleSubmit} />
